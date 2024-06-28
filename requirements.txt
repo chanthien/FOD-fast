@@ -7,3 +7,5 @@ ultralytics
 python-multipart
 sahi
 websockets
+time
+sqlite3

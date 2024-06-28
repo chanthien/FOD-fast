@@ -14,6 +14,7 @@ from datetime import datetime
 from sahi import AutoDetectionModel
 import sqlite3
 from typing import List, Dict
+import time
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -107,7 +108,18 @@ async def process_video(request: Request):
 
     async def process_frames():
         global latest_frame, latest_detections
+        # we will process for each 5 frame
+        frame_count = 0
+        # while True:
+        #     ret, frame = cap.read()
+        #     if not ret:
+        #         break
+        #
+        #     frame_count += 1
+        #     if frame_count % 5 == 0:  # Xử lý cứ mỗi 5 frame
+        # Thực hiện xử lý frame
         while True:
+
             ret, frame = cap.read()
             if not ret:
                 break

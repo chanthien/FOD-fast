@@ -1,0 +1,43 @@
+<!-- templates/home.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Object Detection and GPS Localization</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+</head>
+<body>
+    <h1>Object Detection and GPS Localization</h1>
+    <form action="/process" method="post">
+        <label for="input_source">Select Input Source:</label>
+        <select name="input_source" id="input_source">
+            <option value="webcam">Webcam</option>
+            <option value="ip_camera">IP Camera</option>
+            <option value="video_url">Video URL</option>
+            <option value="mp4_file">MP4 File</option>
+        </select>
+
+        <div id="additional_input" style="display: none;">
+            <label for="input_path">Input Path:</label>
+            <input type="text" name="input_path" id="input_path">
+        </div>
+
+        <button type="submit">Start Detection</button>
+    </form>
+
+    <script>
+        const inputSource = document.getElementById('input_source');
+        const additionalInput = document.getElementById('additional_input');
+
+        inputSource.addEventListener('change', function() {
+            if (this.value !== 'webcam') {
+                additionalInput.style.display = 'block';
+            } else {
+                additionalInput.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

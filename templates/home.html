@@ -1,17 +1,62 @@
-<!-- templates/home.html -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Object Detection and GPS Localization</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+    <title>FOD Detection and GPS Localization</title>
+    <style>
+        body {
+            display: flex;             /* Enable flexbox for centering */
+            flex-direction: column;   /* Align items vertically */
+            justify-content: center;   /* Center vertically */
+            align-items: center;      /* Center horizontally */
+            min-height: 100vh;        /* Ensure full viewport height */
+            background-image: url('https://minhtuanmobile.com/uploads/blog/hinh-nen-iphone-may-bay-cuc-chat-cho-dan-dam-me-xe-dich-230427090116.jpg'); /* Replace with your image path */
+            background-size: cover;    /* Cover the entire viewport */
+            background-position: center; /* Center the image */
+            font-family: sans-serif;  /* Set a basic font */
+        }
+
+        form {
+            background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent white background */
+            padding: 20px;
+            border-radius: 8px;
+        }
+        label {
+                display: block;
+                margin-bottom: 5px;
+                font-weight: bold;
+            }
+
+            select, input[type="text"] {
+                width: 100%;
+                padding: 10px;
+                margin-bottom: 15px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                box-sizing: border-box; /* Bao gồm padding và border vào width */
+            }
+
+            button {
+                background-color: #4CAF50; /* Màu xanh lá cây */
+                color: white;
+                padding: 12px 20px;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 16px;
+            }
+
+            button:hover {
+                background-color: #45a049; /* Màu xanh lá cây đậm hơn khi hover */
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>Object Detection and GPS Localization</h1>
+    <h1>FOD Detection and GPS Localization</h1>
     <form action="/process" method="post">
-        <label for="input_source">Select Input Source:</label>
+        <label for="input_source">Select Source:</label>
         <select name="input_source" id="input_source">
             <option value="webcam">Webcam</option>
             <option value="ip_camera">IP Camera</option>

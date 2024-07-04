@@ -9,3 +9,4 @@ sahi
 websockets
 time
 sqlite3
+psutil

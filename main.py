@@ -5,7 +5,6 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, StreamingResponse
 import cv2
-import numpy as np
 from utils import load_model, detect_objects, compute_perspective_transform, transform_to_gps
 import asyncio
 import json
@@ -14,7 +13,10 @@ from datetime import datetime
 from sahi import AutoDetectionModel
 import sqlite3
 from typing import List, Dict
+from ResourceMonitor import ResourceMonitor
 import time
+# to run api: uvicorn main:app --reload
+
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -22,29 +24,21 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
+TELEGRAM_TOKEN = "your_telegram_bot_token"
+TELEGRAM_CHAT_ID = "your_chat_id"
 # Mount static files and templates
 app.mount("/static", StaticFiles(directory="E:/fast-claude\static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 # Load the YOLOv8 model
-# model = load_model("models/yolov8n.pt")
 
 sahi_model = AutoDetectionModel.from_pretrained(
     model_type="yolov8",
-    model_path= 'models/yolov8n.pt',
+    model_path= 'models/yolov8-fod01.pt',
     confidence_threshold=0.5,
     device='cuda:0' #or "cpu"
 )
-# predict(
-#         model_type="yolov8",
-#         model_path="path/to/yolov8n.pt",
-#         model_device="cpu",  # or 'cuda:0'
-#         model_confidence_threshold=0.4,
-#         source="path/to/dir",
-#         slice_height=256,
-#         slice_width=256,
-#         overlap_height_ratio=0.2,
-#         overlap_width_ratio=0.2,)
+
 # Define GPS points and image points for perspective transform
 # gps_points = [
 #     (longitude1, latitude1),
@@ -60,8 +54,8 @@ sahi_model = AutoDetectionModel.from_pretrained(
 # ]
 # Compute perspective transform matrix
 perspective_matrix = compute_perspective_transform(
-    [(10.0, 10.0), (20.0, 10.0), (20.0, 20.0), (10.0, 20.0)],
-    [(100, 100), (200, 100), (200, 200), (100, 200)]
+    [(105.843583, 21.004964), (105.844614, 21.005134), ( 105.844700, 21.004923 ), (105.843556, 21.005169)],
+    [(0, 0), (1200, 0), (1200, 720), (0, 720)]
 )
 # Compute perspective transform matrix
 # transform_matrix = compute_perspective_transform(gps_points, image_points)
@@ -89,7 +83,9 @@ async def home(request: Request):
 
 
 @app.post("/process")
+
 async def process_video(request: Request):
+    start_time = time.time()
     global latest_frame, latest_detections
     form_data = await request.form()
     input_source = form_data.get("input_source")
@@ -108,16 +104,7 @@ async def process_video(request: Request):
 
     async def process_frames():
         global latest_frame, latest_detections
-        # we will process for each 5 frame
-        frame_count = 0
-        # while True:
-        #     ret, frame = cap.read()
-        #     if not ret:
-        #         break
-        #
-        #     frame_count += 1
-        #     if frame_count % 5 == 0:  # Xử lý cứ mỗi 5 frame
-        # Thực hiện xử lý frame
+
         while True:
 
             ret, frame = cap.read()
@@ -128,12 +115,10 @@ async def process_video(request: Request):
 
             # Perform object detection using SAHI
 
-            # detections = result.to_coco_annotations()
-            # Convert detections to COCO format but attributed error
-
             detections = detect_objects(sahi_model, frame)
             # detections = result
-
+            system_usage = ResourceMonitor( interval=1)
+            system_usage.print_usage()
             # Transform detections to GPS coordinates
             gps_detections = transform_to_gps(detections, perspective_matrix)
 
@@ -147,9 +132,12 @@ async def process_video(request: Request):
             except Exception as e:
                 print(f"An exception occurred: {e}")    # Add a small delay to prevent excessive CPU usage
 
+
     # Start processing frames in the background
     asyncio.create_task(process_frames())
     logger.info("Processing frames in the background")
+    end_time = time.time()
+    logger.info(f"Processing time: {end_time - start_time}")
     return templates.TemplateResponse("results.html", {"request": request})
 
 @app.websocket("/ws")
@@ -164,7 +152,7 @@ async def websocket_endpoint(websocket: WebSocket):
     except websockets.exceptions.ConnectionClosedError:
         logger.info("WebSocket disconnected")
 
-# save_detections_to_db
+    save_detections_to_db
 def save_detections_to_db(detections: List[Dict]):
     timestamp = datetime.now().isoformat()
     for det in detections:

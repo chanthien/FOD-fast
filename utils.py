@@ -62,5 +62,5 @@ def transform_to_gps(detections, matrix):
             'lon': float(gps_points[0]),
             'confidence': det['confidence']
         })
-    # logger.info(f"Detections: {transformed_detections}")
+    logger.info(f"Detections: {transformed_detections}")
     return transformed_detections

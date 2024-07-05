@@ -29,7 +29,7 @@ class VideoProcessor:
             if frame_count % 100 == 0:
                 logger.info(f"Captured {frame_count} frames")
             logger.info("Captured frame")
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.1)
 
     async def _process_frame(self):
         logger.info("Starting process_frame")
@@ -72,7 +72,7 @@ class VideoProcessor:
 
     async def process_single_image(self, image):
         self.latest_frame = image
-        detections = detect_objects(image)
+        detections = detect_objects(sahi_model, image)
         gps_detections = transform_to_gps(detections)
         save_detections_to_db(gps_detections)
         self.latest_detections = {

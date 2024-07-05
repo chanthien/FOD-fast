@@ -8,6 +8,11 @@ import sqlite3
 from datetime import datetime
 from sahi.predict import get_sliced_prediction
 from sahi import AutoDetectionModel
+# from telegram import Bot, Update
+# from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+
+# BOT_TOKEN = "AnUme123bot"
+# bot = Bot(token=BOT_TOKEN)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -17,8 +22,8 @@ logger = logging.getLogger(__name__)
 
 sahi_model = AutoDetectionModel.from_pretrained(
     model_type="yolov8",
-    model_path='models/yolov8-fod01.pt',
-    confidence_threshold=0.5,
+    model_path='models/yolov8n.pt',
+    confidence_threshold=0.3,
     device='cuda:0'  # or "cpu"
 )
 
@@ -128,7 +133,7 @@ def save_detections_to_db(detections):
                          (timestamp, object_name, latitude, longitude, confidence)
                          VALUES (?, ?, ?, ?, ?)''',
                       (timestamp, det['name'], det['lat'], det['lon'], det['confidence']))
-                      # ( det['name'], det['lat'], det['lon'], det['confidence']))
+
         conn.commit()
     except sqlite3.Error as e:
         logger.error(f"Database error: {str(e)}")

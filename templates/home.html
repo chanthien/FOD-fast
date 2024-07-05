@@ -6,50 +6,46 @@
     <title>FOD Detection and GPS Localization</title>
     <style>
         body {
-            display: flex;             /* Enable flexbox for centering */
-            flex-direction: column;   /* Align items vertically */
-            justify-content: center;   /* Center vertically */
-            align-items: center;      /* Center horizontally */
-            min-height: 100vh;        /* Ensure full viewport height */
-            background-image: url('https://minhtuanmobile.com/uploads/blog/hinh-nen-iphone-may-bay-cuc-chat-cho-dan-dam-me-xe-dich-230427090116.jpg'); /* Replace with your image path */
-            background-size: cover;    /* Cover the entire viewport */
-            background-position: center; /* Center the image */
-            font-family: sans-serif;  /* Set a basic font */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-image: url('https://minhtuanmobile.com/uploads/blog/hinh-nen-iphone-may-bay-cuc-chat-cho-dan-dam-me-xe-dich-230427090116.jpg');
+            background-size: cover;
+            background-position: center;
+            font-family: sans-serif;
         }
-
         form {
-            background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent white background */
+            background-color: rgba(255, 255, 255, 0.8);
             padding: 20px;
             border-radius: 8px;
+            width: 300px;
         }
         label {
-                display: block;
-                margin-bottom: 5px;
-                font-weight: bold;
-            }
-
-            select, input[type="text"] {
-                width: 100%;
-                padding: 10px;
-                margin-bottom: 15px;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-                box-sizing: border-box; /* Bao gồm padding và border vào width */
-            }
-
-            button {
-                background-color: #4CAF50; /* Màu xanh lá cây */
-                color: white;
-                padding: 12px 20px;
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 16px;
-            }
-
-            button:hover {
-                background-color: #45a049; /* Màu xanh lá cây đậm hơn khi hover */
-            }
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        select, input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
         }
     </style>
 </head>
@@ -61,13 +57,11 @@
             <option value="webcam">Webcam</option>
             <option value="ip_camera">IP Camera</option>
             <option value="video_url">Video URL</option>
-            <option value="mp4_file">MP4 File</option>
-            <option value="image">Image</option>
         </select>
 
         <div id="additional_input" style="display: none;">
             <label for="input_path">Input Path:</label>
-            <input type="text" name="input_path" id="input_path">
+            <input type="text" name="input_path" id="input_path" placeholder="Enter URL or file path">
         </div>
 
         <button type="submit">Start Detection</button>
@@ -76,12 +70,15 @@
     <script>
         const inputSource = document.getElementById('input_source');
         const additionalInput = document.getElementById('additional_input');
+        const inputPath = document.getElementById('input_path');
 
         inputSource.addEventListener('change', function() {
-            if (this.value !== 'webcam') {
-                additionalInput.style.display = 'block';
-            } else {
+            if (this.value === 'webcam') {
                 additionalInput.style.display = 'none';
+                inputPath.removeAttribute('required');
+            } else {
+                additionalInput.style.display = 'block';
+                inputPath.setAttribute('required', 'required');
             }
         });
     </script>

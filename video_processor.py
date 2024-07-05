@@ -29,7 +29,7 @@ class VideoProcessor:
             if frame_count % 100 == 0:
                 logger.info(f"Captured {frame_count} frames")
             logger.info("Captured frame")
-            await asyncio.sleep(0.2)
+            await asyncio.sleep(0.1)
 
     async def _process_frame(self):
         logger.info("Starting process_frame")
@@ -70,19 +70,6 @@ class VideoProcessor:
                 logger.error(f"Error processing frame {frame_count}: {str(e)}", exc_info=True)
             await asyncio.sleep(0.01)
 
-    async def process_single_image(self, image):
-        self.latest_frame = image
-        detections = detect_objects(image)
-        gps_detections = transform_to_gps(detections)
-        save_detections_to_db(gps_detections)
-        self.latest_detections = {
-            'video': [{
-                'name': det['name'],
-                'confidence': det['confidence'],
-                'bbox': det['bbox']
-            } for det in detections],
-            'gps': gps_detections
-        }
 
     async def generate_frames(self):
         frame_count = 0
@@ -93,6 +80,7 @@ class VideoProcessor:
                     frame_count += 1
                     if frame_count % 100 == 0:
                         logger.info(f"Generated {frame_count} video frames")
+
                     yield (b'--frame\r\n'
                            b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
                 except Exception as e:

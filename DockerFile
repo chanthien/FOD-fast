@@ -1,0 +1,30 @@
+
+# Sử dụng image cơ sở Python
+FROM python:3.9-slim
+
+# Cài đặt các dependencies hệ thống cần thiết
+RUN apt-get update && apt-get install -y \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgl1-mesa-glx \
+    && rm -rf /var/lib/apt/lists/*
+
+# Thiết lập thư mục làm việc trong container
+WORKDIR /app
+
+# Sao chép requirements.txt vào container
+COPY requirements.txt .
+
+# Cài đặt các dependencies Python
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Sao chép toàn bộ mã nguồn vào container
+COPY . .
+
+# Expose port mà FastAPI sẽ chạy
+EXPOSE 8000
+
+# Khởi chạy ứng dụng FastAPI
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

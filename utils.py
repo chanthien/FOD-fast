@@ -1,5 +1,6 @@
 # utils.py
-
+import psutil
+import time
 import cv2
 import numpy as np
 from ultralytics import YOLO
@@ -8,6 +9,13 @@ import sqlite3
 from datetime import datetime
 from sahi.predict import get_sliced_prediction
 from sahi import AutoDetectionModel
+from typing import List
+from fastapi import WebSocket
+# from telegram import Bot, Update
+# from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+
+# BOT_TOKEN = "AnUme123bot"
+# bot = Bot(token=BOT_TOKEN)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -17,12 +25,10 @@ logger = logging.getLogger(__name__)
 
 sahi_model = AutoDetectionModel.from_pretrained(
     model_type="yolov8",
-    model_path='models/yolov8-fod01.pt',
-    confidence_threshold=0.5,
+    model_path='models/yolov8n.pt',
+    confidence_threshold=0.3,
     device='cuda:0'  # or "cpu"
 )
-
-
 
 
 def load_model(model_path):
@@ -89,33 +95,25 @@ def transform_to_gps(detections, matrix):
     return transformed_detections
 
 
-def initialize_capture(input_source, form_data):
-    try:
-        if input_source == "webcam":
-            logger.info("Attempting to open webcam")
-            cap = cv2.VideoCapture(0)
-            if not cap.isOpened():
-                logger.error("Failed to open webcam")
-                raise IOError("Unable to open webcam")
-            logger.info("Webcam opened successfully")
-        elif input_source == "ip_camera":
-            cap = cv2.VideoCapture(form_data.get("ip_address"))
-        elif input_source == "video_url":
-            cap = cv2.VideoCapture(form_data.get("video_url"))
-        elif input_source == "mp4_file":
-            cap = cv2.VideoCapture(form_data.get("file_path"))
-        elif input_source == "image":
-            cap = cv2.imread(form_data.get("file_path"))
-        else:
-            raise ValueError("Invalid input source")
+def initialize_capture(input_source: str, input_path: str):
+    if input_source == "webcam":
+        cap = cv2.VideoCapture(0)
+    elif input_source == "ip_camera":
+        if not input_path:
+            raise ValueError("IP Camera URL is required")
+        cap = cv2.VideoCapture(input_path)
+    elif input_source == "video_url":
+        if not input_path:
+            raise ValueError("Video URL is required")
 
-        if not cap.isOpened() and input_source != "image":
-            raise IOError(f"Unable to open video source: {input_source}")
+        cap = cv2.VideoCapture(input_path)
+    else:
+        raise ValueError(f"Unknown input source: {input_source}")
 
-        return cap
-    except Exception as e:
-        logger.error(f"Error initializing capture: {str(e)}", exc_info=True)
-        raise
+    if not cap or not cap.isOpened():
+        raise ValueError(f"Unable to open video source: {input_path}")
+
+    return cap
 
 
 def save_detections_to_db(detections):
@@ -128,10 +126,59 @@ def save_detections_to_db(detections):
                          (timestamp, object_name, latitude, longitude, confidence)
                          VALUES (?, ?, ?, ?, ?)''',
                       (timestamp, det['name'], det['lat'], det['lon'], det['confidence']))
-                      # ( det['name'], det['lat'], det['lon'], det['confidence']))
+
         conn.commit()
     except sqlite3.Error as e:
         logger.error(f"Database error: {str(e)}")
         conn.rollback()
     finally:
         conn.close()
+
+# WebSocket manager
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: dict):
+        for connection in self.active_connections:
+            await connection.send_json(message)
+
+    async def close_all(self):
+        for connection in self.active_connections:
+            await connection.close()
+        self.active_connections.clear()
+
+# System resource monitor
+def get_cpu_usage():
+    return psutil.cpu_percent(interval=1)
+
+
+def get_gpu_usage():
+    return "GPU usage information"
+
+
+class SystemResourceMonitor:
+    def __init__(self):
+        self.start_time = time.time()
+
+    def get_memory_usage(self):
+        memory = psutil.virtual_memory()
+        return memory.used/(1024*1024)
+
+    def calculate_fps(self, num_frames):
+        end_time = time.time()
+        elapsed_time = end_time - self.start_time
+        fps = num_frames / elapsed_time
+        return fps
+
+    def get_processing_time(self):
+        end_time = time.time()
+        processing_time = end_time - self.start_time
+        return processing_time

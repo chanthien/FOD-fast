@@ -4,15 +4,38 @@ import cv2
 import numpy as np
 from ultralytics import YOLO
 import logging
+import sqlite3
+from datetime import datetime
 from sahi.predict import get_sliced_prediction
+from sahi import AutoDetectionModel
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+
+
+sahi_model = AutoDetectionModel.from_pretrained(
+    model_type="yolov8",
+    model_path='models/yolov8-fod01.pt',
+    confidence_threshold=0.5,
+    device='cuda:0'  # or "cpu"
+)
+
+
+
 
 def load_model(model_path):
     model = YOLO(model_path)
     return model
 
+def draw_bounding_boxes(frame, detections):
+    for det in detections:
+        x1, y1, x2, y2 = map(int, det['bbox'])
+        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        label = f"{det['name']} {det['confidence']:.2f}"
+        cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+    return frame
 
 def detect_objects(sahi_model, frame):
     result = get_sliced_prediction(
@@ -64,3 +87,51 @@ def transform_to_gps(detections, matrix):
         })
     logger.info(f"Detections: {transformed_detections}")
     return transformed_detections
+
+
+def initialize_capture(input_source, form_data):
+    try:
+        if input_source == "webcam":
+            logger.info("Attempting to open webcam")
+            cap = cv2.VideoCapture(0)
+            if not cap.isOpened():
+                logger.error("Failed to open webcam")
+                raise IOError("Unable to open webcam")
+            logger.info("Webcam opened successfully")
+        elif input_source == "ip_camera":
+            cap = cv2.VideoCapture(form_data.get("ip_address"))
+        elif input_source == "video_url":
+            cap = cv2.VideoCapture(form_data.get("video_url"))
+        elif input_source == "mp4_file":
+            cap = cv2.VideoCapture(form_data.get("file_path"))
+        elif input_source == "image":
+            cap = cv2.imread(form_data.get("file_path"))
+        else:
+            raise ValueError("Invalid input source")
+
+        if not cap.isOpened() and input_source != "image":
+            raise IOError(f"Unable to open video source: {input_source}")
+
+        return cap
+    except Exception as e:
+        logger.error(f"Error initializing capture: {str(e)}", exc_info=True)
+        raise
+
+
+def save_detections_to_db(detections):
+    conn = sqlite3.connect('detections.db')
+    c = conn.cursor()
+    timestamp = datetime.now().isoformat()
+    try:
+        for det in detections:
+            c.execute('''INSERT INTO detections 
+                         (timestamp, object_name, latitude, longitude, confidence)
+                         VALUES (?, ?, ?, ?, ?)''',
+                      (timestamp, det['name'], det['lat'], det['lon'], det['confidence']))
+                      # ( det['name'], det['lat'], det['lon'], det['confidence']))
+        conn.commit()
+    except sqlite3.Error as e:
+        logger.error(f"Database error: {str(e)}")
+        conn.rollback()
+    finally:
+        conn.close()

@@ -1,0 +1,7 @@
+train: C:/Users/Admin/Downloads/FOD/dataset/FOD.v1i.yolov9/train/images
+val: C:/Users/Admin/Downloads/FOD/dataset/FOD.v1i.yolov9/valid/images
+test: C:/Users/Admin/Downloads/FOD/dataset/FOD.v1i.yolov9/test/images
+
+nc: 28
+names: ['AdjustableWrench', 'Battery', 'BoltNutSet', 'BoltWasher', 'Bolt', 'ClampPart', 'Cutter', 'FuelCap', 'Hammer', 'Label', 'LuggagePart', 'LuggageTag', 'MetalPart', 'Nail', 'Nut', 'PaintChip', 'Pen', 'PlasticPart', 'Pliers', 'Rock', 'Screwdriver', 'Screw', 'SodaCan', 'Tape', 'Washer', 'Wire', 'Wood', 'Wrench']
+

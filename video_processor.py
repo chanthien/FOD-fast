@@ -5,7 +5,10 @@ from utils import save_detections_to_db, detect_objects, transform_to_gps,sahi_m
 
 logger = logging.getLogger(__name__)
 
-
+matrix = compute_perspective_transform(
+                    [(105.843583, 21.004964), (105.844614, 21.005134), (105.844700, 21.004923),
+                     (105.843556, 21.005169)],
+                    [(0, 0), (1200, 0), (1200, 720), (0, 720)])
 class VideoProcessor:
     def __init__(self):
         self.latest_frame = None
@@ -50,11 +53,8 @@ class VideoProcessor:
                     'confidence': det['confidence'],
                     'bbox': det['bbox']
                 } for det in detections]
-                matrix = compute_perspective_transform(
-                    [(105.843583, 21.004964), (105.844614, 21.005134), (105.844700, 21.004923),
-                     (105.843556, 21.005169)],
-                    [(0, 0), (1200, 0), (1200, 720), (0, 720)]
-                )
+
+
 
                 gps_detections = transform_to_gps(detections,matrix)
                 logger.debug(f"Transformed {len(gps_detections)} detections to GPS")
@@ -88,3 +88,4 @@ class VideoProcessor:
             else:
                 logger.warning("No frame available for video feed")
             await asyncio.sleep(0.1)
+

@@ -7,7 +7,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, StreamingResponse
 
-from utils import initialize_capture, ConnectionManager, SystemResourceMonitor
+from utils import initialize_capture, ConnectionManager, SystemResourceMonitor, base64_to_cv2
 from video_processor import VideoProcessor
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -56,6 +56,19 @@ async def process_video(request: Request):
 
     return templates.TemplateResponse("results.html", {"request": request})
 
+@app.post("/sprocess")
+async def sprocess_video(request: Request):
+    form_data = await request.form()
+    processed_data = form_data.get("processed_data")
+    cap = base64_to_cv2(processed_data)
+    await asyncio.create_task(video_processor.process_frames(cap))
+
+
+    return templates.TemplateResponse("results.html", {"request": request})
+
+
+
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
@@ -63,6 +76,7 @@ async def websocket_endpoint(websocket: WebSocket):
         while True:
             if video_processor.latest_detections:
                 await manager.broadcast(video_processor.latest_detections)
+                # await websocket.send_json(video_processor.latest_detections)
                 logger.info(
                     f"Broadcast detections: {len(video_processor.latest_detections['video'])} video, {len(video_processor.latest_detections['gps'])} GPS")
             await asyncio.sleep(0.1)

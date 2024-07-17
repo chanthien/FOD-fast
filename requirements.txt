@@ -9,3 +9,4 @@ sahi==0.11.18
 torch==2.3.1
 ultralytics==8.2.56
 uvicorn==0.30.1
+ffmpeg-python==0.2.0

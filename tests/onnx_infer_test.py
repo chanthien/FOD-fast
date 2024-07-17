@@ -15,6 +15,7 @@ def preprocess_image(image_path, input_size=(640, 640)):
     return image.astype(np.float32), original_image
 
 
+
 def run_inference(onnx_session, preprocessed_image):
     input_name = onnx_session.get_inputs()[0].name
     output = onnx_session.run(None, {input_name: preprocessed_image})

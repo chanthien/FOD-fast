@@ -3,14 +3,18 @@ import psutil
 import time
 import cv2
 import numpy as np
+import subprocess
 from ultralytics import YOLO
 import logging
 import sqlite3
+import base64
+import ffmpeg
 from datetime import datetime
 from sahi.predict import get_sliced_prediction
 from sahi import AutoDetectionModel
 from typing import List
 from fastapi import WebSocket
+
 # from telegram import Bot, Update
 # from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
@@ -95,27 +99,103 @@ def transform_to_gps(detections, matrix):
     return transformed_detections
 
 
+def base64_to_cv2(base64_string):
+    # Loại bỏ header của chuỗi base64 nếu có
+    if 'data:image' in base64_string:
+        base64_string = base64_string.split(',')[1]
+
+    # Giải mã base64
+    img_data = base64.b64decode(base64_string)
+
+    # Chuyển đổi thành mảng numpy
+    nparr = np.frombuffer(img_data, np.uint8)
+
+    # Đọc hình ảnh bằng cv2
+    img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+
+    return img
+
+# def initialize_capture(input_source: str, input_path: str):
+#     if input_source == "webcam":
+#         cap = cv2.VideoCapture(0)
+#     elif input_source == "ip_camera":
+#         if not input_path:
+#             raise ValueError("IP Camera URL is required")
+#         cap = cv2.VideoCapture(input_path)
+#     elif input_source == "video_url":
+#         if not input_path:
+#             raise ValueError("Video URL is required")
+#
+#         cap = cv2.VideoCapture(input_path)
+#     else:
+#         raise ValueError(f"Unknown input source: {input_source}")
+#
+#     if not cap or not cap.isOpened():
+#         raise ValueError(f"Unable to open video source: {input_path}")
+#
+#     return cap
+# def initialize_capture(input_source: str, input_path: str):
+#     if input_source == "webcam":
+#         cap = cv2.VideoCapture(0)
+#     elif input_source in ["ip_camera", "video_url"]:
+#         if not input_path:
+#             raise ValueError("IP Camera URL or Video URL is required")
+#
+#         # Sử dụng FFmpeg để lấy luồng video
+#         ffmpeg_command = [
+#             'ffmpeg',
+#             '-i', input_path,
+#             '-f', 'rawvideo',
+#             '-pix_fmt', 'bgr24',
+#             '-'
+#         ]
+#         process = subprocess.Popen(ffmpeg_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+#         return process
+#     else:
+#         raise ValueError(f"Unknown input source: {input_source}")
+#
+#
+# def read_frame_from_ffmpeg(process):
+#     width = 640  # Chiều rộng của khung hình
+#     height = 480  # Chiều cao của khung hình
+#     frame_size = width * height * 3  # Kích thước của khung hình (3 kênh màu)
+#
+#     raw_frame = process.stdout.read(frame_size)
+#     if len(raw_frame) != frame_size:
+#         return None
+#
+#     frame = np.frombuffer(raw_frame, np.uint8).reshape((height, width, 3))
+#     return frame
+
 def initialize_capture(input_source: str, input_path: str):
     if input_source == "webcam":
         cap = cv2.VideoCapture(0)
     elif input_source == "ip_camera":
         if not input_path:
             raise ValueError("IP Camera URL is required")
-        cap = cv2.VideoCapture(input_path)
+        cap = _process_ip_camera(input_path)
     elif input_source == "video_url":
         if not input_path:
             raise ValueError("Video URL is required")
-
-        cap = cv2.VideoCapture(input_path)
+        cap = _process_video_url(input_path)
     else:
         raise ValueError(f"Unknown input source: {input_source}")
 
-    if not cap or not cap.isOpened():
-        raise ValueError(f"Unable to open video source: {input_path}")
-
     return cap
 
+def _process_ip_camera(ip_address: str):
+    # Use ffmpeg-python to process the IP camera stream
+    ffmpeg_cmd = f"ffmpeg -i {ip_address} -c:v libx264 -crf 18 -c:a aac -b:a 128k -f flv pipe:1"
+    proc = subprocess.Popen(ffmpeg_cmd, shell=True, stdout=subprocess.PIPE)
+    cap = cv2.VideoCapture(proc.stdout)
+    return cap
 
+def _process_video_url(video_url: str):
+    # Use ffmpeg-python to process the video URL stream
+    ffmpeg_cmd = f"ffmpeg -i {video_url} -c:v libx264 -crf 18 -c:a aac -b:a 128k -f flv pipe:1"
+    proc = subprocess.Popen(ffmpeg_cmd, shell=True, stdout=subprocess.PIPE)
+    cap = cv2.VideoCapture(proc.stdout)
+    return cap
 def save_detections_to_db(detections):
     conn = sqlite3.connect('detections.db')
     c = conn.cursor()
@@ -156,17 +236,15 @@ class ConnectionManager:
         self.active_connections.clear()
 
 # System resource monitor
-def get_cpu_usage():
-    return psutil.cpu_percent(interval=1)
-
-
-def get_gpu_usage():
-    return "GPU usage information"
-
 
 class SystemResourceMonitor:
     def __init__(self):
         self.start_time = time.time()
+
+    def get_gpu_usage(self):
+        return "GPU usage information"
+    def get_cpu_usage(self):
+        return psutil.cpu_percent(interval=1)
 
     def get_memory_usage(self):
         memory = psutil.virtual_memory()

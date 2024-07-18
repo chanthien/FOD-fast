@@ -8,6 +8,5 @@ torch==2.3.1
 ultralytics==8.2.56
 uvicorn==0.30.1
 ffmpeg-python==0.2.0
-base64
-json 
-ultralytics
+ultralytics==8.2.56
+uvicorn==0.30.1
